@@ -15,17 +15,25 @@ const DUST_SPECKS =
 export function BookSpine({
   book,
   inhabitantReadingHere,
+  recentlyVisitedByInhabitant,
+  rediscovered,
   index = 0,
 }: {
   book: BookListItem;
   inhabitantReadingHere?: boolean;
+  recentlyVisitedByInhabitant?: boolean;
+  rediscovered?: boolean;
   index?: number;
 }) {
   const { hue, widthPx, heightPx, dustLevel } = computeSpineVisual(book);
   const lentOut = isCurrentlyLentOut(book);
 
   return (
-    <div className="relative shrink-0" style={{ width: widthPx }}>
+    <div
+      className="relative shrink-0"
+      style={{ width: widthPx }}
+      data-book-id={book.id}
+    >
       {inhabitantReadingHere && (
         <span className="pointer-events-none absolute -top-5 left-1/2 z-10 -translate-x-1/2">
           <InhabitantMark activity="READING" size={22} />
@@ -34,7 +42,7 @@ export function BookSpine({
       <Link
         href={`/books/${book.id}`}
         title={`${book.title}${book.author ? " / " + book.author : ""}`}
-        className="group relative flex flex-col items-center overflow-hidden rounded-[2px] opacity-0 shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-transform [animation:spine-enter_0.5s_ease-out_forwards] hover:-translate-y-2 hover:shadow-[0_12px_18px_rgba(0,0,0,0.55)]"
+        className={`group relative flex flex-col items-center overflow-hidden rounded-[2px] opacity-0 shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-transform [animation:spine-enter_0.5s_ease-out_forwards] hover:-translate-y-2 hover:shadow-[0_12px_18px_rgba(0,0,0,0.55)] ${rediscovered ? "ring-2 ring-accent [animation:spine-enter_0.5s_ease-out_forwards,rediscover-pulse_1.6s_ease-in-out_3]" : ""}`}
         style={{
           width: widthPx,
           height: heightPx,
@@ -47,6 +55,18 @@ export function BookSpine({
             aria-hidden
             className="pointer-events-none absolute inset-0 [animation:dust-drift_11s_ease-in-out_infinite]"
             style={{ backgroundImage: DUST_SPECKS, opacity: dustLevel * 0.8 }}
+          />
+        )}
+        {recentlyVisitedByInhabitant && (
+          // さっきまで住人がここにいた、というほのかな余韻(数分かけて消える)
+          <span
+            key="afterglow"
+            aria-hidden
+            className="pointer-events-none absolute inset-0 [animation:inhabitant-afterglow_150s_ease-out_forwards]"
+            style={{
+              background:
+                "radial-gradient(140% 60% at 50% 15%, rgba(217,164,65,0.35) 0%, transparent 70%)",
+            }}
           />
         )}
         <div className="mt-3 min-h-0 flex-1 overflow-hidden px-0.5">

@@ -44,19 +44,39 @@ body {
   @apply border-accent;
 }
 
+/* きれいな正弦波ではなく、キーフレームの間隔と量を不揃いにして
+   「重心が揺れる」ような、生き物らしい不規則さを出す */
 @keyframes inhabitant-sway {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-3px) rotate(3deg); }
+  0%   { transform: translateY(0) rotate(-2deg); }
+  22%  { transform: translateY(-2px) rotate(1deg); }
+  47%  { transform: translateY(-4px) rotate(4deg); }
+  71%  { transform: translateY(-1px) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(-2deg); }
 }
 
 @keyframes inhabitant-nod {
-  0%, 100% { transform: rotate(-4deg); }
-  50% { transform: rotate(6deg); }
+  0%   { transform: rotate(-3deg); }
+  30%  { transform: rotate(2deg); }
+  55%  { transform: rotate(6deg); }
+  80%  { transform: rotate(1deg); }
+  100% { transform: rotate(-3deg); }
 }
 
 @keyframes inhabitant-breathe {
-  0%, 100% { transform: scale(0.97); opacity: 0.85; }
-  50% { transform: scale(1.03); opacity: 1; }
+  0%   { transform: scale(0.97); opacity: 0.82; }
+  40%  { transform: scale(1.02); opacity: 0.95; }
+  65%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(0.97); opacity: 0.82; }
+}
+
+@keyframes inhabitant-afterglow {
+  0% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+@keyframes rediscover-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217,164,65,0.6); }
+  50% { box-shadow: 0 0 14px 4px rgba(217,164,65,0.6); }
 }
 
 @keyframes spine-enter {

@@ -21,13 +21,16 @@ function floatingPosition(seed: string): { top: string; left: string } {
 export function BookShelf({
   books,
   inhabitant,
+  rediscoveredBookId,
 }: {
   books: BookListItem[];
   inhabitant?: {
     activity: InhabitantActivity;
     bookId: string | null;
     stateStartedAt?: string;
+    recentlyLeftBookId?: string | null;
   };
+  rediscoveredBookId?: string | null;
 }) {
   if (books.length === 0) {
     return (
@@ -43,12 +46,15 @@ export function BookShelf({
     books.some((b) => b.id === inhabitant.bookId);
 
   const showFloating =
-    inhabitant &&
+    !!inhabitant &&
     (inhabitant.activity === "IDLE" || inhabitant.activity === "NAPPING");
 
-  const floatPos = showFloating
+  // 常に位置は計算し続け、表示/非表示はopacityで切り替える。
+  // こうすることでDOMを維持したままtop/leftのtransitionが効き、
+  // 次に現れる時も「今いた場所」から滑るように動けるようにする。
+  const floatPos = inhabitant
     ? floatingPosition(`${inhabitant.activity}:${inhabitant.stateStartedAt ?? ""}`)
-    : null;
+    : { top: "50%", left: "50%" };
 
   return (
     <div
@@ -69,14 +75,21 @@ export function BookShelf({
           book={book}
           index={i}
           inhabitantReadingHere={readingBookVisible && book.id === inhabitant?.bookId}
+          recentlyVisitedByInhabitant={book.id === inhabitant?.recentlyLeftBookId}
+          rediscovered={book.id === rediscoveredBookId}
         />
       ))}
-      {floatPos && (
+      {inhabitant && (
         <span
           className="pointer-events-none absolute"
-          style={{ top: floatPos.top, left: floatPos.left }}
+          style={{
+            top: floatPos.top,
+            left: floatPos.left,
+            opacity: showFloating ? 1 : 0,
+            transition: "top 3.5s ease, left 3.5s ease, opacity 1.4s ease",
+          }}
         >
-          <InhabitantMark activity={inhabitant!.activity} />
+          <InhabitantMark activity={inhabitant.activity} />
         </span>
       )}
     </div>

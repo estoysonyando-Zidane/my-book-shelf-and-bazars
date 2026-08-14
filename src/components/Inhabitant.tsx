@@ -44,7 +44,7 @@ export function InhabitantMark({
   return (
     <span
       aria-hidden
-      className="pointer-events-none block"
+      className="pointer-events-none block transition-transform duration-[1400ms] ease-[cubic-bezier(0.34,0.2,0.2,1)]"
       style={{
         width: size,
         height: size,
