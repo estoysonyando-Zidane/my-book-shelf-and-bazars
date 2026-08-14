@@ -1,0 +1,155 @@
+// docs/design.md の「2. データモデル」に対応するスキーマ
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReadingStatus {
+  UNREAD
+  READING
+  FINISHED
+}
+
+enum TagSource {
+  AUTO
+  MANUAL
+}
+
+enum CommentAuthorType {
+  OWNER
+  COLLEAGUE
+}
+
+enum InhabitantActivity {
+  IDLE
+  READING
+  NAPPING
+  CARRYING
+}
+
+enum InhabitantLocation {
+  SHELF
+  ROOM
+}
+
+enum ReservationStatus {
+  ACTIVE
+  FULFILLED
+  CANCELLED
+}
+
+model Book {
+  id               String   @id @default(cuid())
+  isbn             String?  @unique
+  title            String
+  author           String?
+  publisher        String?
+  publishedYear    Int?
+  pageCount        Int?
+  coverImageUrl    String?
+
+  measuredWidthMm  Float?
+  measuredHeightMm Float?
+  measuredDepthMm  Float?
+
+  ownedCount       Int           @default(1)
+  readingStatus    ReadingStatus @default(UNREAD)
+
+  acquiredAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tags             BookTag[]
+  loans            Loan[]
+  comments         Comment[]
+  reservations     Reservation[]
+  inhabitantHolds  InhabitantState[]
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  source    TagSource @default(MANUAL)
+  createdAt DateTime  @default(now())
+
+  books     BookTag[]
+}
+
+model BookTag {
+  bookId String
+  tagId  String
+
+  book   Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, tagId])
+}
+
+model Loan {
+  id           String    @id @default(cuid())
+  bookId       String
+  borrowerName String
+  loanedAt     DateTime  @default(now())
+  dueAt        DateTime?
+  returnedAt   DateTime?
+
+  book         Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+}
+
+model Comment {
+  id         String            @id @default(cuid())
+  bookId     String
+  authorName String
+  authorType CommentAuthorType @default(OWNER)
+  body       String
+  createdAt  DateTime          @default(now())
+
+  book       Book              @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+}
+
+// 単一レコードで「住人」の現在状態を保持する(design.md 2章 InhabitantState)
+model InhabitantState {
+  id               String              @id @default(cuid())
+  activity         InhabitantActivity  @default(IDLE)
+  currentBookId    String?
+  location         InhabitantLocation  @default(SHELF)
+  stateStartedAt   DateTime            @default(now())
+  nextTransitionAt DateTime
+
+  currentBook      Book?               @relation(fields: [currentBookId], references: [id])
+}
+
+model Reservation {
+  id                 String            @id @default(cuid())
+  bookId             String
+  reservedByName     String
+  reservedByColleagueId String?
+  reservedAt         DateTime          @default(now())
+  status             ReservationStatus @default(ACTIVE)
+
+  book               Book              @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  colleague          Colleague?        @relation(fields: [reservedByColleagueId], references: [id])
+
+  @@index([bookId])
+}
+
+// フェーズ2: 招待制の同僚
+model Colleague {
+  id           String        @id @default(cuid())
+  displayName  String
+  inviteToken  String        @unique
+  createdAt    DateTime      @default(now())
+  revokedAt    DateTime?
+
+  reservations Reservation[]
+}
