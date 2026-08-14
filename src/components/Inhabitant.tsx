@@ -3,16 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 
 // 蔵書空間に住む、正体不明の存在(docs/requirements.md 3.6)。
-// クラバウターマンのような「フードを被った小さな影」を起源イメージとし、
-// 顔や細部は描かず輪郭(シルエット)だけを見せることで、正体不明さを保ったまま
-// 何をしているか(佇む/読む/眠る)が姿勢で伝わるようにする。
+// 「見えない曖昧さ」ではなく「見えているのに種族が分からない」に方針転換。
+// 顔(目)・耳らしきもの・手足・体をちゃんと持った生き物として描き、
+// その上で何の生き物とも言えない体つきにすることで、愛着と未知を両立させる。
 
 export type InhabitantActivity = "IDLE" | "READING" | "NAPPING" | "CARRYING";
 
 const ACTIVITY_GLOW: Record<InhabitantActivity, string> = {
-  IDLE: "rgba(125,106,168,0.85)",
-  READING: "rgba(217,164,65,0.9)",
-  NAPPING: "rgba(90,100,150,0.6)",
+  IDLE: "#c9b8ec",
+  READING: "#f0c878",
+  NAPPING: "#8f9fd6",
   CARRYING: "transparent",
 };
 
@@ -40,16 +40,37 @@ const GESTURE_WORD: Record<"stretch" | "stumble", string> = {
   stumble: "よろっ",
 };
 
-// フードを被った小さな影のシルエット(顔・手足は描かない)
-const SILHOUETTE_PATH =
-  "M12 1.5C8.5 1.5 6 5 6 9.5C6 13 7 14.5 6.2 16.5C4.8 19.5 4.5 24.5 7 27C9 29 15 29 17 27C19.5 24.5 19.2 19.5 17.8 16.5C17 14.5 18 13 18 9.5C18 5 15.5 1.5 12 1.5Z";
+const BODY_COLOR = "#221c30";
+const BODY_STROKE = "#3a3050";
+
+// 丸みを帯びた体(種族不明)。耳らしき突起と手足だけ添える
+const BODY_PATH =
+  "M15 4C9 4 5.5 9 5.5 15C5.5 19.5 7 21.5 6.5 24.5C6 28 9 31 15 31C21 31 24 28 23.5 24.5C23 21.5 24.5 19.5 24.5 15C24.5 9 21 4 15 4Z";
 
 const POSE_TRANSFORM: Record<InhabitantActivity, string> = {
   IDLE: "rotate(0deg)",
-  READING: "rotate(24deg) translateY(3px)",
-  NAPPING: "rotate(90deg) scaleY(0.72) translateY(2px)",
+  READING: "rotate(18deg) translateY(2px)",
+  NAPPING: "rotate(90deg) scaleY(0.8) translateY(1px)",
   CARRYING: "rotate(0deg)",
 };
+
+function Eyes({ activity, glow }: { activity: InhabitantActivity; glow: string }) {
+  if (activity === "NAPPING") {
+    return (
+      <>
+        <rect x="9.3" y="14" width="3.4" height="1" rx="0.5" fill={BODY_STROKE} />
+        <rect x="17.3" y="14" width="3.4" height="1" rx="0.5" fill={BODY_STROKE} />
+      </>
+    );
+  }
+  const ry = activity === "READING" ? 1.1 : 1.8;
+  return (
+    <>
+      <ellipse cx="11" cy="14.5" rx="1.8" ry={ry} fill={glow} />
+      <ellipse cx="19" cy="14.5" rx="1.8" ry={ry} fill={glow} />
+    </>
+  );
+}
 
 export function InhabitantMark({
   activity,
@@ -122,24 +143,23 @@ export function InhabitantMark({
           width: size,
           height: size,
           transform: POSE_TRANSFORM[activity],
-          transformOrigin: "50% 85%",
+          transformOrigin: "50% 88%",
         }}
       >
-        <span className={`block ${swayClass}`} style={{ transformOrigin: "50% 85%" }}>
-          <svg
-            viewBox="0 0 24 32"
-            width={size}
-            height={size}
-            style={{
-              filter: `drop-shadow(0 0 3px ${glow}) drop-shadow(0 0 7px ${glow})`,
-            }}
-          >
-            <path
-              d={SILHOUETTE_PATH}
-              fill="rgba(18,14,26,0.92)"
-              stroke={glow}
-              strokeWidth="0.6"
-            />
+        <span className={`block ${swayClass}`} style={{ transformOrigin: "50% 88%" }}>
+          <svg viewBox="0 0 30 34" width={size} height={size}>
+            {/* 足 */}
+            <ellipse cx="11" cy="30.5" rx="2.6" ry="2" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
+            <ellipse cx="19" cy="30.5" rx="2.6" ry="2" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
+            {/* 腕 */}
+            <ellipse cx="4.3" cy="18" rx="2.3" ry="3.4" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
+            <ellipse cx="25.7" cy="18" rx="2.3" ry="3.4" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
+            {/* 耳らしきもの(何の耳かは分からない) */}
+            <circle cx="9" cy="3.2" r="2.1" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
+            <circle cx="21" cy="3.2" r="2.1" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
+            {/* 体 */}
+            <path d={BODY_PATH} fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.6" />
+            <Eyes activity={activity} glow={glow} />
           </svg>
         </span>
       </span>
