@@ -19,6 +19,7 @@ export function BookSpine({
   rediscovered,
   dimmed,
   index = 0,
+  hrefBase = "/books",
 }: {
   book: BookListItem;
   inhabitantReadingHere?: boolean;
@@ -26,6 +27,7 @@ export function BookSpine({
   rediscovered?: boolean;
   dimmed?: boolean;
   index?: number;
+  hrefBase?: string;
 }) {
   const { hue, widthPx, heightPx, dustLevel, tiltDeg, depthLevel } = computeSpineVisual(book);
   const lentOut = isCurrentlyLentOut(book);
@@ -48,7 +50,7 @@ export function BookSpine({
         </span>
       )}
       <Link
-        href={`/books/${book.id}`}
+        href={`${hrefBase}/${book.id}`}
         title={`${book.title}${book.author ? " / " + book.author : ""}`}
         className={`group relative flex flex-col items-center overflow-hidden rounded-[2px] opacity-0 shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-transform [animation:spine-enter_0.5s_ease-out_forwards] hover:-translate-y-2 hover:shadow-[0_12px_18px_rgba(0,0,0,0.55)] ${rediscovered ? "ring-2 ring-accent [animation:spine-enter_0.5s_ease-out_forwards,rediscover-pulse_1.6s_ease-in-out_3]" : ""}`}
         style={{

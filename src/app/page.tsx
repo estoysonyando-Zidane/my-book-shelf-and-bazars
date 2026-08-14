@@ -197,12 +197,20 @@ export default function HomePage() {
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-serif text-2xl text-foreground">積読の住処</h1>
-        <Link
-          href="/register"
-          className="rounded bg-accent px-4 py-2 text-sm font-medium text-[#1a1420] transition hover:brightness-110"
-        >
-          + 本を登録
-        </Link>
+        <nav className="flex items-center gap-4">
+          <Link href="/invites" className="text-sm text-muted hover:text-foreground">
+            同僚への招待
+          </Link>
+          <Link href="/reservations" className="text-sm text-muted hover:text-foreground">
+            予約管理
+          </Link>
+          <Link
+            href="/register"
+            className="rounded bg-accent px-4 py-2 text-sm font-medium text-[#1a1420] transition hover:brightness-110"
+          >
+            + 本を登録
+          </Link>
+        </nav>
       </header>
 
       <div className="flex flex-wrap items-center gap-3 rounded bg-background-elevated p-4 text-sm">

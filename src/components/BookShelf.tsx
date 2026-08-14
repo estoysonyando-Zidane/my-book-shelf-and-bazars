@@ -23,6 +23,7 @@ export function BookShelf({
   inhabitant,
   rediscoveredBookId,
   isDimmed,
+  hrefBase = "/books",
 }: {
   books: BookListItem[];
   inhabitant?: {
@@ -33,6 +34,7 @@ export function BookShelf({
   };
   rediscoveredBookId?: string | null;
   isDimmed?: (book: BookListItem) => boolean;
+  hrefBase?: string;
 }) {
   if (books.length === 0) {
     return (
@@ -80,6 +82,7 @@ export function BookShelf({
           recentlyVisitedByInhabitant={book.id === inhabitant?.recentlyLeftBookId}
           rediscovered={book.id === rediscoveredBookId}
           dimmed={isDimmed?.(book)}
+          hrefBase={hrefBase}
         />
       ))}
       {inhabitant && (
