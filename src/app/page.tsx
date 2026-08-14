@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BookShelf } from "@/components/BookShelf";
 import type { InhabitantActivity } from "@/components/Inhabitant";
 import { ambienceLabel } from "@/lib/ambience";
-import type { BookListItem } from "@/lib/types";
+import { isCurrentlyLentOut, type BookListItem } from "@/lib/types";
 
 const AFTERGLOW_MS = 150_000;
 const REDISCOVER_HIGHLIGHT_MS = 5_000;
@@ -67,15 +67,14 @@ export default function HomePage() {
   const [rediscoveredBookId, setRediscoveredBookId] = useState<string | null>(null);
   const [ambience, setAmbience] = useState("");
 
+  // 検索・絞り込みは「棚から消す」のではなく「沈める(暗くする)」ため、
+  // サーバーには並び順だけを渡し、常に全件を取得する
   const query = useMemo(() => {
     const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (status) params.set("status", status);
-    if (lentOut) params.set("lentOut", "true");
     params.set("sort", sort === "random" ? "createdAt" : sort);
     params.set("order", order);
     return params.toString();
-  }, [q, status, lentOut, sort, order]);
+  }, [sort, order]);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,6 +95,20 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [query, sort, shuffleSeed]);
+
+  function matchesFilter(book: BookListItem): boolean {
+    if (q) {
+      const needle = q.toLowerCase();
+      const haystack = `${book.title} ${book.author ?? ""}`.toLowerCase();
+      if (!haystack.includes(needle)) return false;
+    }
+    if (status && book.readingStatus !== status) return false;
+    if (lentOut && !isCurrentlyLentOut(book)) return false;
+    return true;
+  }
+
+  const matchingCount = books.filter(matchesFilter).length;
+  const hasActiveFilter = Boolean(q || status || lentOut);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,10 +176,7 @@ export default function HomePage() {
       const data = await res.json();
       if (!data.book) return;
 
-      // フィルタで隠れていないよう検索条件をリセットしてから、その本を探しに行く
-      setQ("");
-      setStatus("");
-      setLentOut(false);
+      // フィルタで沈んでいても存在は残っているので、検索条件はそのままでよい
       setRediscoveredBookId(data.book.id);
 
       requestAnimationFrame(() => {
@@ -258,13 +268,20 @@ export default function HomePage() {
             {order === "asc" ? "昇順" : "降順"}
           </button>
         )}
-        <span className="text-muted">{books.length}冊</span>
+        <span className="text-muted">
+          {hasActiveFilter ? `${matchingCount} / ${books.length}冊` : `${books.length}冊`}
+        </span>
       </div>
 
       {loading ? (
         <p className="p-10 text-center text-muted">読み込み中…</p>
       ) : (
-        <BookShelf books={books} inhabitant={inhabitant} rediscoveredBookId={rediscoveredBookId} />
+        <BookShelf
+          books={books}
+          inhabitant={inhabitant}
+          rediscoveredBookId={rediscoveredBookId}
+          isDimmed={hasActiveFilter ? (book) => !matchesFilter(book) : undefined}
+        />
       )}
 
       <footer className="mt-auto pb-2 text-xs text-muted">{ambience}</footer>

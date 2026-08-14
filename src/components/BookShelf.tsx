@@ -22,6 +22,7 @@ export function BookShelf({
   books,
   inhabitant,
   rediscoveredBookId,
+  isDimmed,
 }: {
   books: BookListItem[];
   inhabitant?: {
@@ -31,6 +32,7 @@ export function BookShelf({
     recentlyLeftBookId?: string | null;
   };
   rediscoveredBookId?: string | null;
+  isDimmed?: (book: BookListItem) => boolean;
 }) {
   if (books.length === 0) {
     return (
@@ -77,15 +79,17 @@ export function BookShelf({
           inhabitantReadingHere={readingBookVisible && book.id === inhabitant?.bookId}
           recentlyVisitedByInhabitant={book.id === inhabitant?.recentlyLeftBookId}
           rediscovered={book.id === rediscoveredBookId}
+          dimmed={isDimmed?.(book)}
         />
       ))}
       {inhabitant && (
         <span
-          className="pointer-events-none absolute"
+          className="absolute"
           style={{
             top: floatPos.top,
             left: floatPos.left,
             opacity: showFloating ? 1 : 0,
+            pointerEvents: showFloating ? "auto" : "none",
             transition: "top 3.5s ease, left 3.5s ease, opacity 1.4s ease",
           }}
         >

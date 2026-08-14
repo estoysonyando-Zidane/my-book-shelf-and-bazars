@@ -36,7 +36,35 @@ function pickNextActivity(): NextPlan {
   return { activity: "CARRYING", durationMs, needsBook: true };
 }
 
-async function pickBookForInhabitant(excludeId: string | null): Promise<string | null> {
+// その蔵書の中で一番多いタグ = 住人の「好み」として、選ぶ確率にだけ反映する。
+// UI上には一切出さない(本人にも説明できないような、滲み出るだけの嗜好)。
+async function getFavoriteTagId(): Promise<string | null> {
+  const grouped = await prisma.bookTag.groupBy({
+    by: ["tagId"],
+    _count: { tagId: true },
+    orderBy: { _count: { tagId: "desc" } },
+    take: 1,
+  });
+  return grouped[0]?.tagId ?? null;
+}
+
+function weightedPick(
+  candidates: { id: string; tags: { tagId: string }[] }[],
+  favoriteTagId: string | null,
+): string | null {
+  if (candidates.length === 0) return null;
+  const pool: string[] = [];
+  for (const c of candidates) {
+    const isFavorite = favoriteTagId && c.tags.some((t) => t.tagId === favoriteTagId);
+    pool.push(c.id, ...(isFavorite ? [c.id, c.id] : []));
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+async function pickBookForInhabitant(
+  excludeId: string | null,
+  favoriteTagId: string | null,
+): Promise<string | null> {
   // 「忘れられた本」への気づきを促す役割のため、積読の古い本を優先的に選ぶ
   const preferNeglected = Math.random() < 0.7;
 
@@ -50,11 +78,10 @@ async function pickBookForInhabitant(excludeId: string | null): Promise<string |
       where: { ...base, readingStatus: "UNREAD" },
       orderBy: { acquiredAt: "asc" },
       take: 20,
-      select: { id: true },
+      select: { id: true, tags: { select: { tagId: true } } },
     });
-    if (candidates.length > 0) {
-      return candidates[Math.floor(Math.random() * candidates.length)].id;
-    }
+    const picked = weightedPick(candidates, favoriteTagId);
+    if (picked) return picked;
   }
 
   const count = await prisma.book.count({ where: base });
@@ -86,11 +113,15 @@ export async function getOrAdvanceInhabitantState() {
 
   let steps = 0;
   const now = Date.now();
+  let favoriteTagId: string | null | undefined;
 
   while (state.nextTransitionAt.getTime() <= now && steps < MAX_CATCHUP_STEPS) {
     const plan = pickNextActivity();
+    if (plan.needsBook && favoriteTagId === undefined) {
+      favoriteTagId = await getFavoriteTagId();
+    }
     const bookId: string | null = plan.needsBook
-      ? await pickBookForInhabitant(state.currentBookId)
+      ? await pickBookForInhabitant(state.currentBookId, favoriteTagId ?? null)
       : null;
 
     state = await prisma.inhabitantState.update({

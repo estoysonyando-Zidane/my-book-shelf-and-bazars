@@ -88,3 +88,23 @@ body {
   0%, 100% { transform: translate(0, 0); }
   50% { transform: translate(1px, -2px); }
 }
+
+@keyframes peek-bubble {
+  0% { opacity: 0; transform: translate(-50%, 4px); }
+  15% { opacity: 1; transform: translate(-50%, 0); }
+  80% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -3px); }
+}
+
+@keyframes inhabitant-stretch {
+  0% { transform: scaleY(1) rotate(0deg); }
+  40% { transform: scaleY(1.18) rotate(-4deg); }
+  100% { transform: scaleY(1) rotate(0deg); }
+}
+
+@keyframes inhabitant-stumble {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-3px) rotate(-6deg); }
+  50% { transform: translateX(2px) rotate(4deg); }
+  80% { transform: translateX(-1px) rotate(-2deg); }
+}

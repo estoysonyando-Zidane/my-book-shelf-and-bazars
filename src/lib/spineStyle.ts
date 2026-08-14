@@ -16,6 +16,8 @@ export type SpineVisual = {
   widthPx: number;
   heightPx: number;
   dustLevel: number; // 0(真新しい)〜1(長く積読されている)
+  tiltDeg: number; // 本ごとに固定の、ごくわずかな傾き
+  depthLevel: number; // 0(手前)〜1(少し奥に押し込まれている)
 };
 
 const BASE_HEIGHT = 200;
@@ -33,7 +35,11 @@ export function computeSpineVisual(book: {
   readingStatus?: string;
 }): SpineVisual {
   const seed = `${book.title}${book.author ?? ""}`;
-  const hue = hashString(seed) % 360;
+  const hash = hashString(seed);
+  const hue = hash % 360;
+  // 色相とは別のビット位置を使い、色とは独立した「その本固有の個体差」を出す
+  const tiltDeg = ((hash >> 6) % 50) / 10 - 2.5; // -2.5deg〜+2.5deg
+  const depthLevel = ((hash >> 12) % 100) / 100 < 0.15 ? ((hash >> 18) % 60) / 100 : 0;
 
   let widthPx: number;
   if (book.measuredWidthMm) {
@@ -55,7 +61,7 @@ export function computeSpineVisual(book: {
     dustLevel = Math.max(0, Math.min(1, days / MAX_DUST_DAYS));
   }
 
-  return { hue, widthPx, heightPx, dustLevel };
+  return { hue, widthPx, heightPx, dustLevel, tiltDeg, depthLevel };
 }
 
 export function spineBackground(hue: number, dustLevel = 0): string {

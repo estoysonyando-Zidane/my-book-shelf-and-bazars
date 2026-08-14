@@ -17,25 +17,33 @@ export function BookSpine({
   inhabitantReadingHere,
   recentlyVisitedByInhabitant,
   rediscovered,
+  dimmed,
   index = 0,
 }: {
   book: BookListItem;
   inhabitantReadingHere?: boolean;
   recentlyVisitedByInhabitant?: boolean;
   rediscovered?: boolean;
+  dimmed?: boolean;
   index?: number;
 }) {
-  const { hue, widthPx, heightPx, dustLevel } = computeSpineVisual(book);
+  const { hue, widthPx, heightPx, dustLevel, tiltDeg, depthLevel } = computeSpineVisual(book);
   const lentOut = isCurrentlyLentOut(book);
 
   return (
     <div
       className="relative shrink-0"
-      style={{ width: widthPx }}
+      style={{
+        width: widthPx,
+        transform: `rotate(${tiltDeg}deg)`,
+        transformOrigin: "50% 100%",
+        opacity: dimmed ? 0.18 : 1,
+        transition: "opacity 0.4s ease",
+      }}
       data-book-id={book.id}
     >
       {inhabitantReadingHere && (
-        <span className="pointer-events-none absolute -top-5 left-1/2 z-10 -translate-x-1/2">
+        <span className="absolute -top-5 left-1/2 z-10 -translate-x-1/2">
           <InhabitantMark activity="READING" size={22} />
         </span>
       )}
@@ -48,6 +56,7 @@ export function BookSpine({
           height: heightPx,
           backgroundImage: spineBackground(hue, dustLevel),
           animationDelay: `${Math.min(index * 25, 600)}ms`,
+          filter: depthLevel > 0 ? `brightness(${1 - depthLevel * 0.22})` : undefined,
         }}
       >
         {dustLevel > 0.15 && (
