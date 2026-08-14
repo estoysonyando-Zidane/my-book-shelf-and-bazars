@@ -15,11 +15,13 @@ export type SpineVisual = {
   hue: number;
   widthPx: number;
   heightPx: number;
+  dustLevel: number; // 0(真新しい)〜1(長く積読されている)
 };
 
 const BASE_HEIGHT = 200;
 const MIN_WIDTH = 16;
 const MAX_WIDTH = 64;
+const MAX_DUST_DAYS = 365;
 
 export function computeSpineVisual(book: {
   title: string;
@@ -27,6 +29,8 @@ export function computeSpineVisual(book: {
   pageCount?: number | null;
   measuredWidthMm?: number | null;
   measuredHeightMm?: number | null;
+  acquiredAt?: string | Date;
+  readingStatus?: string;
 }): SpineVisual {
   const seed = `${book.title}${book.author ?? ""}`;
   const hue = hashString(seed) % 360;
@@ -45,13 +49,24 @@ export function computeSpineVisual(book: {
     ? Math.round(book.measuredHeightMm * 1.15)
     : BASE_HEIGHT;
 
-  return { hue, widthPx, heightPx };
+  let dustLevel = 0;
+  if (book.readingStatus === "UNREAD" && book.acquiredAt) {
+    const days = (Date.now() - new Date(book.acquiredAt).getTime()) / 86_400_000;
+    dustLevel = Math.max(0, Math.min(1, days / MAX_DUST_DAYS));
+  }
+
+  return { hue, widthPx, heightPx, dustLevel };
 }
 
-export function spineBackground(hue: number): string {
+export function spineBackground(hue: number, dustLevel = 0): string {
   // ベースカラー + ハイライト(左側)とシャドウ(右側)を重ねて、
-  // 平面のままでも凹凸・質感があるように見せる
+  // 平面のままでも凹凸・質感があるように見せる。
+  // 積読が長いほど彩度を落とし、埃をかぶったような薄い被膜を重ねる。
+  const saturation = Math.round(32 - dustLevel * 18);
+  const dustFilm = dustLevel * 0.35;
+
   return [
+    `radial-gradient(120% 60% at 50% 0%, rgba(200,195,185,${dustFilm}) 0%, transparent 65%)`,
     `linear-gradient(90deg,
       hsla(${hue},20%,90%,0.16) 0%,
       hsla(${hue},20%,90%,0.03) 12%,
@@ -59,6 +74,6 @@ export function spineBackground(hue: number): string {
       transparent 70%,
       hsla(${hue},10%,0%,0.25) 92%,
       hsla(${hue},10%,0%,0.4) 100%)`,
-    `linear-gradient(160deg, hsl(${hue} 32% 24%) 0%, hsl(${hue} 26% 15%) 100%)`,
+    `linear-gradient(160deg, hsl(${hue} ${saturation}% 24%) 0%, hsl(${hue} ${Math.max(saturation - 6, 10)}% 15%) 100%)`,
   ].join(", ");
 }

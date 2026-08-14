@@ -5,12 +5,29 @@ import type { BookListItem } from "@/lib/types";
 const SHELF_HEIGHT = 240;
 const BOARD_THICKNESS = 14;
 
+function floatingPosition(seed: string): { top: string; left: string } {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  hash = Math.abs(hash);
+  // 棚の中の適当な一角(端に寄りすぎない範囲)に、状態が変わるたびに違う場所へ
+  const top = 20 + (hash % 60); // 20%〜80%
+  const left = 8 + ((hash >> 8) % 84); // 8%〜92%
+  return { top: `${top}%`, left: `${left}%` };
+}
+
 export function BookShelf({
   books,
   inhabitant,
 }: {
   books: BookListItem[];
-  inhabitant?: { activity: InhabitantActivity; bookId: string | null };
+  inhabitant?: {
+    activity: InhabitantActivity;
+    bookId: string | null;
+    stateStartedAt?: string;
+  };
 }) {
   if (books.length === 0) {
     return (
@@ -26,7 +43,12 @@ export function BookShelf({
     books.some((b) => b.id === inhabitant.bookId);
 
   const showFloating =
-    inhabitant && (inhabitant.activity === "IDLE" || inhabitant.activity === "NAPPING");
+    inhabitant &&
+    (inhabitant.activity === "IDLE" || inhabitant.activity === "NAPPING");
+
+  const floatPos = showFloating
+    ? floatingPosition(`${inhabitant.activity}:${inhabitant.stateStartedAt ?? ""}`)
+    : null;
 
   return (
     <div
@@ -41,15 +63,19 @@ export function BookShelf({
         backgroundSize: `100% ${SHELF_HEIGHT}px`,
       }}
     >
-      {books.map((book) => (
+      {books.map((book, i) => (
         <BookSpine
           key={book.id}
           book={book}
+          index={i}
           inhabitantReadingHere={readingBookVisible && book.id === inhabitant?.bookId}
         />
       ))}
-      {showFloating && (
-        <span className="pointer-events-none absolute bottom-4 right-6">
+      {floatPos && (
+        <span
+          className="pointer-events-none absolute"
+          style={{ top: floatPos.top, left: floatPos.left }}
+        >
           <InhabitantMark activity={inhabitant!.activity} />
         </span>
       )}

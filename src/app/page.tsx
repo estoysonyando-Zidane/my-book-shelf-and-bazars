@@ -27,7 +27,8 @@ export default function HomePage() {
   const [books, setBooks] = useState<BookListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [inhabitant, setInhabitant] = useState<
-    { activity: InhabitantActivity; bookId: string | null } | undefined
+    | { activity: InhabitantActivity; bookId: string | null; stateStartedAt?: string }
+    | undefined
   >(undefined);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
@@ -69,7 +70,11 @@ export default function HomePage() {
         .then((res) => res.json())
         .then((data) => {
           if (!cancelled) {
-            setInhabitant({ activity: data.activity, bookId: data.book?.id ?? null });
+            setInhabitant({
+              activity: data.activity,
+              bookId: data.book?.id ?? null,
+              stateStartedAt: data.stateStartedAt,
+            });
           }
         })
         .catch(() => {});

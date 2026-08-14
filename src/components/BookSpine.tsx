@@ -5,27 +5,44 @@ import { InhabitantMark } from "@/components/Inhabitant";
 import { computeSpineVisual, spineBackground } from "@/lib/spineStyle";
 import { isCurrentlyLentOut, type BookListItem } from "@/lib/types";
 
+const DUST_SPECKS =
+  "radial-gradient(1px 1px at 20% 15%, rgba(230,225,210,0.9) 0, transparent 60%)," +
+  "radial-gradient(1px 1px at 70% 35%, rgba(230,225,210,0.7) 0, transparent 60%)," +
+  "radial-gradient(1px 1px at 40% 60%, rgba(230,225,210,0.8) 0, transparent 60%)," +
+  "radial-gradient(1px 1px at 85% 75%, rgba(230,225,210,0.6) 0, transparent 60%)," +
+  "radial-gradient(1px 1px at 15% 88%, rgba(230,225,210,0.7) 0, transparent 60%)";
+
 export function BookSpine({
   book,
   inhabitantReadingHere,
+  index = 0,
 }: {
   book: BookListItem;
   inhabitantReadingHere?: boolean;
+  index?: number;
 }) {
-  const { hue, widthPx, heightPx } = computeSpineVisual(book);
+  const { hue, widthPx, heightPx, dustLevel } = computeSpineVisual(book);
   const lentOut = isCurrentlyLentOut(book);
 
   return (
     <Link
       href={`/books/${book.id}`}
       title={`${book.title}${book.author ? " / " + book.author : ""}`}
-      className="group relative shrink-0 flex flex-col items-center overflow-hidden rounded-[2px] shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-transform hover:-translate-y-2 hover:shadow-[0_12px_18px_rgba(0,0,0,0.55)]"
+      className="group relative shrink-0 flex flex-col items-center overflow-hidden rounded-[2px] opacity-0 shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-transform [animation:spine-enter_0.5s_ease-out_forwards] hover:-translate-y-2 hover:shadow-[0_12px_18px_rgba(0,0,0,0.55)]"
       style={{
         width: widthPx,
         height: heightPx,
-        backgroundImage: spineBackground(hue),
+        backgroundImage: spineBackground(hue, dustLevel),
+        animationDelay: `${Math.min(index * 25, 600)}ms`,
       }}
     >
+      {dustLevel > 0.15 && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 [animation:dust-drift_11s_ease-in-out_infinite]"
+          style={{ backgroundImage: DUST_SPECKS, opacity: dustLevel * 0.8 }}
+        />
+      )}
       <div className="mt-3 min-h-0 flex-1 overflow-hidden px-0.5">
         <span
           className="text-[11px] font-serif leading-tight text-foreground/90"
@@ -50,8 +67,8 @@ export function BookSpine({
         </span>
       )}
       {inhabitantReadingHere && (
-        <span className="absolute -top-1.5 left-1/2 -translate-x-1/2">
-          <InhabitantMark activity="READING" />
+        <span className="absolute -top-2 left-1/2 -translate-x-1/2">
+          <InhabitantMark activity="READING" size={16} />
         </span>
       )}
     </Link>

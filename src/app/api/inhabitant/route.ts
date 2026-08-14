@@ -15,6 +15,7 @@ export async function GET() {
   return NextResponse.json({
     activity: state.activity,
     location: state.location,
+    stateStartedAt: state.stateStartedAt,
     book,
   });
 }
