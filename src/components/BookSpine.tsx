@@ -44,7 +44,7 @@ export function BookSpine({
     >
       {inhabitantReadingHere && (
         <span className="absolute -top-5 left-1/2 z-10 -translate-x-1/2">
-          <InhabitantMark activity="READING" size={22} />
+          <InhabitantMark activity="READING" size={22} heldBookHue={hue} />
         </span>
       )}
       <Link

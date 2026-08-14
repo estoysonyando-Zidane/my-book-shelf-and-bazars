@@ -54,6 +54,16 @@ const POSE_TRANSFORM: Record<InhabitantActivity, string> = {
   CARRYING: "rotate(0deg)",
 };
 
+function HeldBook({ hue }: { hue: number }) {
+  const fill = `hsl(${hue} 45% 55%)`;
+  return (
+    <g>
+      <rect x="11.5" y="18.6" width="7" height="4.2" rx="0.5" fill={fill} stroke={BODY_STROKE} strokeWidth="0.4" />
+      <line x1="15" y1="18.6" x2="15" y2="22.8" stroke={BODY_STROKE} strokeWidth="0.4" />
+    </g>
+  );
+}
+
 function Eyes({ activity, glow }: { activity: InhabitantActivity; glow: string }) {
   if (activity === "NAPPING") {
     return (
@@ -75,9 +85,11 @@ function Eyes({ activity, glow }: { activity: InhabitantActivity; glow: string }
 export function InhabitantMark({
   activity,
   size = 26,
+  heldBookHue,
 }: {
   activity: InhabitantActivity;
   size?: number;
+  heldBookHue?: number;
 }) {
   const glow = ACTIVITY_GLOW[activity];
   const [bubble, setBubble] = useState<string | null>(null);
@@ -160,6 +172,8 @@ export function InhabitantMark({
             {/* 体 */}
             <path d={BODY_PATH} fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.6" />
             <Eyes activity={activity} glow={glow} />
+            {/* 読んでいる本(実物の背表紙と同じ色味にして、本当にその本だと分かるようにする) */}
+            {activity === "READING" && <HeldBook hue={heldBookHue ?? 40} />}
           </svg>
         </span>
       </span>
