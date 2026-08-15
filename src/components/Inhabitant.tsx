@@ -84,13 +84,18 @@ function Sparkle({ x, y, delay }: { x: number; y: number; delay: number }) {
 // 長く積読されていた本を読んでいる時だけ、単なる読書ではない
 // 「忘れられた本を掘り起こした」特別な瞬間として、きらめきを添える
 function HeldBook({ hue, dustLevel = 0 }: { hue: number; dustLevel?: number }) {
-  // 横に持った本は、開いた本の厚み方向を正面から見た、細い横長の一枚板として表す。
-  // 縁の色だけが実物の背表紙と連動する
-  const edge = `hsl(${hue} 45% 45%)`;
+  // 横に持った本は、真ん中の綴じ目で山なりに開いた2枚のページとして表す
+  // (フラットな一枚板ではなく、開いた本の立体感を出す)。
+  // 片側のページに影を落として奥行きを、縁の色は実物の背表紙と連動させる
+  const nearPage = GLIMPSE_COLOR;
+  const farPage = `hsl(${hue} 15% 62%)`;
+  const edge = `hsl(${hue} 45% 40%)`;
   const isRediscovery = dustLevel > 0.3;
   return (
     <g>
-      <rect x="12" y="19.5" width="22" height="6" rx="3" fill={GLIMPSE_COLOR} stroke={edge} strokeWidth="1.2" />
+      <path d="M23,19.5 L11,21 L11,25 L23,23.5 Z" fill={nearPage} stroke={edge} strokeWidth="0.7" strokeLinejoin="round" />
+      <path d="M23,19.5 L35,21 L35,25 L23,23.5 Z" fill={farPage} stroke={edge} strokeWidth="0.7" strokeLinejoin="round" />
+      <line x1="23" y1="19.5" x2="23" y2="23.5" stroke={edge} strokeWidth="0.6" />
       {isRediscovery &&
         SPARKLE_POINTS.map(([x, y, delay]) => <Sparkle key={x} x={x} y={y} delay={delay} />)}
     </g>
