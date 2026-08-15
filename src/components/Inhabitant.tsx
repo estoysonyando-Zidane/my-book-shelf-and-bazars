@@ -84,13 +84,13 @@ function Sparkle({ x, y, delay }: { x: number; y: number; delay: number }) {
 // 長く積読されていた本を読んでいる時だけ、単なる読書ではない
 // 「忘れられた本を掘り起こした」特別な瞬間として、きらめきを添える
 function HeldBook({ hue, dustLevel = 0 }: { hue: number; dustLevel?: number }) {
-  const cover = `hsl(${hue} 35% 30%)`;
+  // 枠線やクリース線を足さず、表紙とページの2枚の四角形だけで表す(素直な方が読みやすい)
+  const cover = `hsl(${hue} 30% 26%)`;
   const isRediscovery = dustLevel > 0.3;
   return (
     <g>
-      <rect x="14" y="16" width="18" height="12" rx="0.6" fill={cover} stroke={FACE_SHADOW} strokeWidth="0.6" />
-      <rect x="16.5" y="18" width="13" height="8" fill={GLIMPSE_COLOR} opacity="0.9" />
-      <line x1="23" y1="18" x2="23" y2="26" stroke={FACE_SHADOW} strokeWidth="0.4" />
+      <rect x="14" y="16" width="18" height="12" fill={cover} />
+      <rect x="16" y="18" width="14" height="8" fill={GLIMPSE_COLOR} />
       {isRediscovery &&
         SPARKLE_POINTS.map(([x, y, delay]) => <Sparkle key={x} x={x} y={y} delay={delay} />)}
     </g>
