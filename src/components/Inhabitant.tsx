@@ -63,9 +63,9 @@ const POSE_TRANSFORM: Record<InhabitantActivity, string> = {
 };
 
 const SPARKLE_POINTS: [number, number, number][] = [
-  [11, 12, 0], // x, y, animation-delay(s)
-  [35, 15, 0.6],
-  [33, 27, 1.2],
+  [9, 18, 0], // x, y, animation-delay(s)
+  [37, 18, 0.6],
+  [23, 15, 1.2],
 ];
 
 function Sparkle({ x, y, delay }: { x: number; y: number; delay: number }) {
@@ -84,13 +84,13 @@ function Sparkle({ x, y, delay }: { x: number; y: number; delay: number }) {
 // 長く積読されていた本を読んでいる時だけ、単なる読書ではない
 // 「忘れられた本を掘り起こした」特別な瞬間として、きらめきを添える
 function HeldBook({ hue, dustLevel = 0 }: { hue: number; dustLevel?: number }) {
-  // 枠線やクリース線を足さず、表紙とページの2枚の四角形だけで表す(素直な方が読みやすい)
-  const cover = `hsl(${hue} 30% 26%)`;
+  // 横に持った本は、開いた本の厚み方向を正面から見た、細い横長の一枚板として表す。
+  // 縁の色だけが実物の背表紙と連動する
+  const edge = `hsl(${hue} 45% 45%)`;
   const isRediscovery = dustLevel > 0.3;
   return (
     <g>
-      <rect x="14" y="16" width="18" height="12" fill={cover} />
-      <rect x="16" y="18" width="14" height="8" fill={GLIMPSE_COLOR} />
+      <rect x="12" y="19.5" width="22" height="6" rx="3" fill={GLIMPSE_COLOR} stroke={edge} strokeWidth="1.2" />
       {isRediscovery &&
         SPARKLE_POINTS.map(([x, y, delay]) => <Sparkle key={x} x={x} y={y} delay={delay} />)}
     </g>
