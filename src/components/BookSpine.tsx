@@ -29,7 +29,7 @@ export function BookSpine({
   index?: number;
   hrefBase?: string;
 }) {
-  const { hue, widthPx, heightPx, dustLevel, tiltDeg, depthLevel } = computeSpineVisual(book);
+  const { hue, widthPx, heightPx, dustLevel, tiltDeg, depthLevel, hasObi } = computeSpineVisual(book);
   const lentOut = isCurrentlyLentOut(book);
 
   return (
@@ -61,7 +61,7 @@ export function BookSpine({
         style={{
           width: widthPx,
           height: heightPx,
-          backgroundImage: spineBackground(hue, dustLevel),
+          backgroundImage: spineBackground(hue, dustLevel, hasObi),
           animationDelay: `${Math.min(index * 25, 600)}ms`,
           filter: depthLevel > 0 ? `brightness(${1 - depthLevel * 0.22})` : undefined,
         }}
