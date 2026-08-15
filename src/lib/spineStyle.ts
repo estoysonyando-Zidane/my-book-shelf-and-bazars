@@ -42,6 +42,59 @@ function lookupGenreHue(name: string): number | undefined {
   return key ? GENRE_HUES[key] : undefined;
 }
 
+// 判型ごとの標準寸法(mm)。実測が無い本でも、判型が分かれば
+// 「だいたいこのくらいの背丈」で並べられる。
+type BookFormat = "bunko" | "shinsho" | "comic" | "tankobon" | "a5" | "b5" | "a4" | "oversize" | "unknown";
+
+const FORMAT_HEIGHT_MM: Record<BookFormat, number> = {
+  bunko: 148, shinsho: 173, comic: 174, tankobon: 188,
+  a5: 210, b5: 257, a4: 297, oversize: 310, unknown: 188,
+};
+const FORMAT_WIDTH_MM: Record<Exclude<BookFormat, "unknown">, number> = {
+  bunko: 105, shinsho: 105, comic: 112, tankobon: 128,
+  a5: 148, b5: 182, a4: 210, oversize: 230,
+};
+
+// 「実測 幅(mm)」が分かるなら、判型を逆算したほうが文字列判定より確か。
+function guessFormatFromWidth(widthMm: number): BookFormat {
+  let best: BookFormat = "unknown";
+  let bestDiff = Infinity;
+  for (const [fmt, w] of Object.entries(FORMAT_WIDTH_MM)) {
+    const diff = Math.abs(widthMm - w);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = fmt as BookFormat;
+    }
+  }
+  return bestDiff <= 10 ? best : "unknown";
+}
+
+// 1ページあたりの紙厚(mm)と表紙まわりの厚み(mm)。判型で使う用紙が違う。
+const PAGE_THICKNESS_MM: Record<BookFormat, number> = {
+  bunko: 0.04, shinsho: 0.045, comic: 0.045, tankobon: 0.06,
+  a5: 0.065, b5: 0.07, a4: 0.075, oversize: 0.08, unknown: 0.055,
+};
+const COVER_THICKNESS_MM: Record<BookFormat, number> = {
+  bunko: 1.6, shinsho: 1.8, comic: 1.6, tankobon: 4.0,
+  a5: 3.4, b5: 2.6, a4: 2.4, oversize: 4.5, unknown: 3.0,
+};
+// ページ数も分からないときの既定の厚み(mm)。
+const DEFAULT_THICKNESS_MM: Record<BookFormat, number> = {
+  bunko: 14, shinsho: 15, comic: 12, tankobon: 22,
+  a5: 20, b5: 12, a4: 10, oversize: 25, unknown: 20,
+};
+
+// タイトル・出版社・タグから判型を当て推量する。当たらなくても
+// unknown(四六判相当)として扱うので、事実を汚すことはない。
+function guessFormat(hay: string): BookFormat {
+  if (/文庫/.test(hay)) return "bunko";
+  if (/新書/.test(hay)) return "shinsho";
+  if (/コミック|COMIC|まんが|漫画/i.test(hay)) return "comic";
+  if (/(画集|写真集|図鑑|絵本)/.test(hay)) return "oversize";
+  if (/(ムック|MOOK|雑誌)/i.test(hay)) return "b5";
+  return "unknown";
+}
+
 export type SpineVisual = {
   hue: number;
   saturation: number;
@@ -58,8 +111,10 @@ export type SpineVisual = {
   hardcover: boolean; // 上製本らしい大きさなら、花ぎれを入れる
 };
 
-const BASE_HEIGHT = 200;
-const MIN_WIDTH = 16;
+// mm→px の縮尺。高さ・厚みの両方に同じ値を使うことで、
+// 実測でも判型からの推定でも、本ごとの相対的な大きさが崩れないようにする。
+const PX_PER_MM = 1.15;
+const MIN_WIDTH = 10;
 const MAX_WIDTH = 64;
 const MAX_DUST_DAYS = 365;
 
@@ -71,30 +126,43 @@ export function computeSpineVisual(book: {
   pageCount?: number | null;
   measuredWidthMm?: number | null;
   measuredHeightMm?: number | null;
+  measuredDepthMm?: number | null;
   acquiredAt?: string | Date;
   readingStatus?: string;
   tags?: { tag: { name: string; source: string } }[];
 }): SpineVisual {
   const seed = book.id ?? `${book.title}${book.author ?? ""}`;
   const hash = hashString(seed);
+  const tagNames = book.tags?.map((t) => t.tag.name) ?? [];
 
   // ジャンル(タグ)があればそこから色相を取り、無ければ出版社、
   // それも無ければタイトル/著者から決める。同じ分類でも本ごとに
   // 色みは散らし、棚の上で「塊だが揃ってはいない」見た目にする。
-  const genreTag = book.tags?.map((t) => t.tag.name).map(lookupGenreHue).find((h) => h !== undefined);
+  const genreTag = tagNames.map(lookupGenreHue).find((h) => h !== undefined);
   const baseHue = genreTag ?? hashString(book.publisher || `${book.title}${book.author ?? ""}`) % 360;
   const jitter = (stableRandom(seed, "hue") - 0.5) * 70;
   const hue = (baseHue + jitter + 360) % 360;
 
-  let widthPx: number;
-  if (book.measuredWidthMm) {
-    widthPx = Math.round(book.measuredWidthMm * 0.9);
+  // 判型は「実測 幅(mm)」があればそこから逆算し、無ければ
+  // タイトル・出版社・タグの文字列から当て推量する。
+  const format = book.measuredWidthMm
+    ? guessFormatFromWidth(book.measuredWidthMm)
+    : guessFormat([book.title, book.publisher, ...tagNames].filter(Boolean).join(" "));
+
+  // 背表紙の縦の長さ(=本の高さ)。実測が無ければ判型の標準寸法を使う。
+  const heightMm = book.measuredHeightMm || FORMAT_HEIGHT_MM[format];
+  const heightPx = Math.round(heightMm * PX_PER_MM);
+
+  // 背表紙の横の太さ(=本の厚み)。「実測 幅」ではなく「実測 厚み」で決める。
+  let thicknessMm: number;
+  if (book.measuredDepthMm) {
+    thicknessMm = book.measuredDepthMm;
   } else if (book.pageCount) {
-    widthPx = Math.round(book.pageCount / 15);
+    thicknessMm = book.pageCount * PAGE_THICKNESS_MM[format] + COVER_THICKNESS_MM[format];
   } else {
-    widthPx = 28;
+    thicknessMm = DEFAULT_THICKNESS_MM[format];
   }
-  widthPx = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, widthPx));
+  const widthPx = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(thicknessMm * PX_PER_MM)));
 
   // 布装丁(くすんだ)か紙装丁(少し鮮やか)か。実際の棚は彩度の高い本ばかりではない。
   const cloth = stableRandom(seed, "cloth") < 0.46;
@@ -111,14 +179,15 @@ export function computeSpineVisual(book: {
   const ink = lightness > 46 ? `hsl(${hue.toFixed(0)} 30% 16% / 0.86)` : `hsl(${hue.toFixed(0)} 20% 94% / 0.9)`;
   const foil = stableRandom(seed, "foil") < 0.3;
 
-  const heightPx = book.measuredHeightMm
-    ? Math.round(book.measuredHeightMm * 1.15)
-    : BASE_HEIGHT;
-
   const tiltDeg = ((hash >> 6) % 50) / 10 - 2.5; // -2.5deg〜+2.5deg
   const depthLevel = ((hash >> 12) % 100) / 100 < 0.15 ? ((hash >> 18) % 60) / 100 : 0;
-  const hasObi = stableRandom(seed, "obi") < 0.16 && heightPx > 130;
-  const hardcover = heightPx > 210;
+  // 帯は画集・写真集のような大型本にはあまり付かない
+  const hasObi = stableRandom(seed, "obi") < 0.16 && format !== "oversize";
+  // 上製本(花ぎれ)は判型による。文庫・新書・コミックはまず上製にならない。
+  const hardcoverRate: Partial<Record<BookFormat, number>> = {
+    tankobon: 0.35, a5: 0.55, b5: 0.6, a4: 0.65, oversize: 0.75, unknown: 0.3,
+  };
+  const hardcover = stableRandom(seed, "hardcover") < (hardcoverRate[format] ?? 0);
 
   let dustLevel = 0;
   if (book.readingStatus === "UNREAD" && book.acquiredAt) {
