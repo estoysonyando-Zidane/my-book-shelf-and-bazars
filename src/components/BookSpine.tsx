@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { InhabitantMark } from "@/components/Inhabitant";
-import { computeSpineVisual, spineBackground } from "@/lib/spineStyle";
+import { computeSpineVisual, spineBackground, type SpineVisual } from "@/lib/spineStyle";
 import { isCurrentlyLentOut, type BookListItem } from "@/lib/types";
 
 const DUST_SPECKS =
@@ -11,6 +11,13 @@ const DUST_SPECKS =
   "radial-gradient(1px 1px at 40% 60%, rgba(230,225,210,0.8) 0, transparent 60%)," +
   "radial-gradient(1px 1px at 85% 75%, rgba(230,225,210,0.6) 0, transparent 60%)," +
   "radial-gradient(1px 1px at 15% 88%, rgba(230,225,210,0.7) 0, transparent 60%)";
+
+// 箔押しに見せるための、少し金属質な文字色
+function foilColor(v: SpineVisual): string {
+  return v.lightness > 46
+    ? `hsl(${v.hue.toFixed(0)} 45% 22% / 0.85)`
+    : `hsl(45 55% 82% / 0.85)`;
+}
 
 export function BookSpine({
   book,
@@ -29,7 +36,9 @@ export function BookSpine({
   index?: number;
   hrefBase?: string;
 }) {
-  const { hue, widthPx, heightPx, dustLevel, tiltDeg, depthLevel, hasObi } = computeSpineVisual(book);
+  const visual = computeSpineVisual(book);
+  const { hue, widthPx, heightPx, dustLevel, tiltDeg, depthLevel } = visual;
+  const textColor = visual.foil ? foilColor(visual) : visual.ink;
   const lentOut = isCurrentlyLentOut(book);
 
   return (
@@ -61,7 +70,7 @@ export function BookSpine({
         style={{
           width: widthPx,
           height: heightPx,
-          backgroundImage: spineBackground(hue, dustLevel, hasObi),
+          backgroundImage: spineBackground(visual),
           animationDelay: `${Math.min(index * 25, 600)}ms`,
           filter: depthLevel > 0 ? `brightness(${1 - depthLevel * 0.22})` : undefined,
         }}
@@ -87,8 +96,8 @@ export function BookSpine({
         )}
         <div className="mt-3 min-h-0 flex-1 overflow-hidden px-0.5">
           <span
-            className="text-[11px] font-serif leading-tight text-foreground/90"
-            style={{ writingMode: "vertical-rl" }}
+            className="text-[11px] font-serif leading-tight"
+            style={{ writingMode: "vertical-rl", color: textColor }}
           >
             {book.title}
           </span>
@@ -96,8 +105,8 @@ export function BookSpine({
         {book.author && (
           <div className="mb-3 max-h-14 shrink-0 overflow-hidden">
             <span
-              className="text-[9px] text-muted"
-              style={{ writingMode: "vertical-rl" }}
+              className="text-[9px] opacity-80"
+              style={{ writingMode: "vertical-rl", color: textColor }}
             >
               {book.author}
             </span>
