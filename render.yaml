@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: my-book-shelf-and-bazars
+    runtime: node
+    plan: free
+    branch: claude/book-collection-requirements-avuzho
+    buildCommand: npm install && npx prisma migrate deploy && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: my-book-shelf-and-bazars-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+
+databases:
+  - name: my-book-shelf-and-bazars-db
+    plan: free
+    databaseName: bookshelf
+    user: bookshelf
