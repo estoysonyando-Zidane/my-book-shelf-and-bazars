@@ -21,3 +21,17 @@ export function currentTimeOfDay(date = new Date()): string {
 export function ambienceLabel(date = new Date()): string {
   return `${currentSeason(date)}・${currentTimeOfDay(date)}`;
 }
+
+// 住人にも同じ時間が流れていることを、色温度のわずかな変化で示す。
+// あくまで気配レベルの演出なので、はっきり気づかれない程度にとどめる。
+const TIME_TINT: Record<string, string> = {
+  朝: "brightness(1.05) saturate(1.05) hue-rotate(-4deg)",
+  昼: "none",
+  夕方: "brightness(1.08) saturate(1.15) hue-rotate(-8deg)",
+  夜: "brightness(0.85) saturate(0.85)",
+  夜更け: "brightness(0.7) saturate(0.6) hue-rotate(6deg)",
+};
+
+export function timeOfDayTint(date = new Date()): string {
+  return TIME_TINT[currentTimeOfDay(date)] ?? "none";
+}

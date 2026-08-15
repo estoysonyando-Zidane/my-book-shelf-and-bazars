@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { timeOfDayTint } from "@/lib/ambience";
 
 // 蔵書空間に住む、正体不明の存在(docs/requirements.md 3.6)。
 // クラバウターマン的な方向性の抽象化: 特定のキャラクター・動物の直接引用はしない。
@@ -61,13 +62,37 @@ const POSE_TRANSFORM: Record<InhabitantActivity, string> = {
   CARRYING: "rotate(0deg)",
 };
 
-function HeldBook({ hue }: { hue: number }) {
+const SPARKLE_POINTS: [number, number, number][] = [
+  [11, 12, 0], // x, y, animation-delay(s)
+  [35, 15, 0.6],
+  [33, 27, 1.2],
+];
+
+function Sparkle({ x, y, delay }: { x: number; y: number; delay: number }) {
+  return (
+    <path
+      d={`M${x} ${y - 2}L${x + 0.6} ${y - 0.6}L${x + 2} ${y}L${x + 0.6} ${y + 0.6}L${x} ${y + 2}L${x - 0.6} ${y + 0.6}L${x - 2} ${y}L${x - 0.6} ${y - 0.6}Z`}
+      fill={GLIMPSE_COLOR}
+      style={{
+        animation: `sparkle-twinkle 2.4s ease-in-out ${delay}s infinite`,
+        transformOrigin: `${x}px ${y}px`,
+      }}
+    />
+  );
+}
+
+// 長く積読されていた本を読んでいる時だけ、単なる読書ではない
+// 「忘れられた本を掘り起こした」特別な瞬間として、きらめきを添える
+function HeldBook({ hue, dustLevel = 0 }: { hue: number; dustLevel?: number }) {
   const cover = `hsl(${hue} 35% 30%)`;
+  const isRediscovery = dustLevel > 0.3;
   return (
     <g>
       <rect x="14" y="16" width="18" height="12" rx="0.6" fill={cover} stroke={FACE_SHADOW} strokeWidth="0.6" />
       <rect x="16.5" y="18" width="13" height="8" fill={GLIMPSE_COLOR} opacity="0.9" />
       <line x1="23" y1="18" x2="23" y2="26" stroke={FACE_SHADOW} strokeWidth="0.4" />
+      {isRediscovery &&
+        SPARKLE_POINTS.map(([x, y, delay]) => <Sparkle key={x} x={x} y={y} delay={delay} />)}
     </g>
   );
 }
@@ -97,15 +122,26 @@ export function InhabitantMark({
   activity,
   size = 34,
   heldBookHue,
+  heldBookDustLevel,
 }: {
   activity: InhabitantActivity;
   size?: number;
   heldBookHue?: number;
+  heldBookDustLevel?: number;
 }) {
   const glow = ACTIVITY_GLOW[activity];
   const [bubble, setBubble] = useState<string | null>(null);
   const [gesture, setGesture] = useState<"" | "stretch" | "stumble">("");
   const bubbleTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [tint, setTint] = useState("none");
+
+  // 住人にも同じ時間が流れていることを、色温度でうっすら示す
+  useEffect(() => {
+    const update = () => setTint(timeOfDayTint());
+    update();
+    const interval = setInterval(update, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   function showBubble(word: string) {
     setBubble(word);
@@ -174,7 +210,7 @@ export function InhabitantMark({
             viewBox="0 0 46 46"
             width={size}
             height={size}
-            style={{ filter: `drop-shadow(0 0 5px ${glow})` }}
+            style={{ filter: `drop-shadow(0 0 5px ${glow}) ${tint}` }}
           >
             {/* 布の裾から覗く、丸い足 */}
             <ellipse cx="16" cy="39" rx="4.2" ry="5.5" fill={CLOAK_SHADE} />
@@ -192,7 +228,9 @@ export function InhabitantMark({
             {/* 布の合わせ目からわずかに覗く何か(正体は明かさない、色の存在感だけ) */}
             <ellipse cx="24" cy="32" rx="2.2" ry="5.5" fill={GLIMPSE_COLOR} opacity="0.55" />
             {/* 読んでいる本(実物の背表紙と同じ色味の表紙にして、本当にその本だと分かるようにする) */}
-            {activity === "READING" && <HeldBook hue={heldBookHue ?? 40} />}
+            {activity === "READING" && (
+              <HeldBook hue={heldBookHue ?? 40} dustLevel={heldBookDustLevel} />
+            )}
           </svg>
         </span>
       </span>
