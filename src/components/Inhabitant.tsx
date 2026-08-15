@@ -3,16 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 
 // 蔵書空間に住む、正体不明の存在(docs/requirements.md 3.6)。
-// 「見えない曖昧さ」ではなく「見えているのに種族が分からない」に方針転換。
-// 顔(目)・耳らしきもの・手足・体をちゃんと持った生き物として描き、
-// その上で何の生き物とも言えない体つきにすることで、愛着と未知を両立させる。
+// クラバウターマン的な方向性の抽象化: 特定のキャラクター・動物の直接引用はしない。
+// 丸っこい毛玉や人型そのものではなく、「布に包まれた輪郭の下に手足だけが覗く」姿にし、
+// 顔があるはずの場所はあえて陰にして、微かな光点二つだけを覗かせる。
+// 配色は古い革装丁・すり切れた紙を思わせる暖色でまとめる(冷たい色は使わない)。
 
 export type InhabitantActivity = "IDLE" | "READING" | "NAPPING" | "CARRYING";
 
+const CLOAK_MAIN = "#7a5c42";
+const CLOAK_SHADE = "#50392a";
+const CLOAK_TRIM = "#b08a4a";
+const GLIMPSE_COLOR = "#e0c9a0";
+const LIMB_COLOR = "#5c4530";
+const FACE_SHADOW = "#1c1712";
+
 const ACTIVITY_GLOW: Record<InhabitantActivity, string> = {
-  IDLE: "#c9b8ec",
-  READING: "#f0c878",
-  NAPPING: "#8f9fd6",
+  IDLE: "rgba(176,138,74,0.35)",
+  READING: "rgba(224,201,160,0.4)",
+  NAPPING: "rgba(122,92,66,0.3)",
   CARRYING: "transparent",
 };
 
@@ -40,51 +48,54 @@ const GESTURE_WORD: Record<"stretch" | "stumble", string> = {
   stumble: "よろっ",
 };
 
-const BODY_COLOR = "#221c30";
-const BODY_STROKE = "#3a3050";
-
-// 丸みを帯びた体(種族不明)。耳らしき突起と手足だけ添える
-const BODY_PATH =
-  "M15 4C9 4 5.5 9 5.5 15C5.5 19.5 7 21.5 6.5 24.5C6 28 9 31 15 31C21 31 24 28 23.5 24.5C23 21.5 24.5 19.5 24.5 15C24.5 9 21 4 15 4Z";
+// 布の裾は左右非対称に(量産マスコットっぽい左右対称を避ける)
+const BODY_PATH = "M2,44 Q-2,24 11,10 Q21,2 32,9 Q46,22 43,42 Q32,38 25,44 Q15,39 2,44 Z";
+const BODY_SHADE_PATH = "M2,44 Q-2,24 11,10 Q7,26 9,44 Z";
+const EAR_L_PATH = "M14,11 L8,0 L19,8 Z";
+const EAR_R_PATH = "M30,10 L36,3 L26,7 Z";
 
 const POSE_TRANSFORM: Record<InhabitantActivity, string> = {
   IDLE: "rotate(0deg)",
-  READING: "rotate(18deg) translateY(2px)",
-  NAPPING: "rotate(90deg) scaleY(0.8) translateY(1px)",
+  READING: "rotate(16deg) translateY(1px)",
+  NAPPING: "rotate(90deg) scaleY(0.82)",
   CARRYING: "rotate(0deg)",
 };
 
 function HeldBook({ hue }: { hue: number }) {
-  const fill = `hsl(${hue} 45% 55%)`;
+  const cover = `hsl(${hue} 35% 30%)`;
   return (
     <g>
-      <rect x="11.5" y="18.6" width="7" height="4.2" rx="0.5" fill={fill} stroke={BODY_STROKE} strokeWidth="0.4" />
-      <line x1="15" y1="18.6" x2="15" y2="22.8" stroke={BODY_STROKE} strokeWidth="0.4" />
+      <rect x="14" y="16" width="18" height="12" rx="0.6" fill={cover} stroke={FACE_SHADOW} strokeWidth="0.6" />
+      <rect x="16.5" y="18" width="13" height="8" fill={GLIMPSE_COLOR} opacity="0.9" />
+      <line x1="23" y1="18" x2="23" y2="26" stroke={FACE_SHADOW} strokeWidth="0.4" />
     </g>
   );
 }
 
-function Eyes({ activity, glow }: { activity: InhabitantActivity; glow: string }) {
-  if (activity === "NAPPING") {
-    return (
-      <>
-        <rect x="9.3" y="14" width="3.4" height="1" rx="0.5" fill={BODY_STROKE} />
-        <rect x="17.3" y="14" width="3.4" height="1" rx="0.5" fill={BODY_STROKE} />
-      </>
-    );
-  }
-  const ry = activity === "READING" ? 1.1 : 1.8;
+function Face({ activity }: { activity: InhabitantActivity }) {
+  // 顔があるはずの場所はあえて陰にし、正体は明かさない。
+  // 目は「本当に目なのかも定かでない」微かな光点二つだけ
   return (
     <>
-      <ellipse cx="11" cy="14.5" rx="1.8" ry={ry} fill={glow} />
-      <ellipse cx="19" cy="14.5" rx="1.8" ry={ry} fill={glow} />
+      <ellipse cx="21" cy="14" rx="8" ry="7" fill={FACE_SHADOW} opacity="0.55" />
+      {activity === "NAPPING" ? (
+        <>
+          <line x1="17.5" y1="14" x2="20.5" y2="14" stroke={GLIMPSE_COLOR} strokeWidth="0.7" opacity="0.6" />
+          <line x1="23.5" y1="14.5" x2="26.5" y2="14.5" stroke={GLIMPSE_COLOR} strokeWidth="0.7" opacity="0.6" />
+        </>
+      ) : (
+        <>
+          <circle cx="19" cy="14" r="1.3" fill={GLIMPSE_COLOR} opacity="0.85" />
+          <circle cx="25.5" cy="14.5" r="1.3" fill={GLIMPSE_COLOR} opacity="0.85" />
+        </>
+      )}
     </>
   );
 }
 
 export function InhabitantMark({
   activity,
-  size = 26,
+  size = 34,
   heldBookHue,
 }: {
   activity: InhabitantActivity;
@@ -155,24 +166,32 @@ export function InhabitantMark({
           width: size,
           height: size,
           transform: POSE_TRANSFORM[activity],
-          transformOrigin: "50% 88%",
+          transformOrigin: "50% 90%",
         }}
       >
-        <span className={`block ${swayClass}`} style={{ transformOrigin: "50% 88%" }}>
-          <svg viewBox="0 0 30 34" width={size} height={size}>
-            {/* 足 */}
-            <ellipse cx="11" cy="30.5" rx="2.6" ry="2" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
-            <ellipse cx="19" cy="30.5" rx="2.6" ry="2" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
-            {/* 腕 */}
-            <ellipse cx="4.3" cy="18" rx="2.3" ry="3.4" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
-            <ellipse cx="25.7" cy="18" rx="2.3" ry="3.4" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
-            {/* 耳らしきもの(何の耳かは分からない) */}
-            <circle cx="9" cy="3.2" r="2.1" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
-            <circle cx="21" cy="3.2" r="2.1" fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.5" />
-            {/* 体 */}
-            <path d={BODY_PATH} fill={BODY_COLOR} stroke={BODY_STROKE} strokeWidth="0.6" />
-            <Eyes activity={activity} glow={glow} />
-            {/* 読んでいる本(実物の背表紙と同じ色味にして、本当にその本だと分かるようにする) */}
+        <span className={`block ${swayClass}`} style={{ transformOrigin: "50% 90%" }}>
+          <svg
+            viewBox="0 0 46 46"
+            width={size}
+            height={size}
+            style={{ filter: `drop-shadow(0 0 5px ${glow})` }}
+          >
+            {/* 布の裾から覗く、丸い足 */}
+            <ellipse cx="16" cy="39" rx="4.2" ry="5.5" fill={CLOAK_SHADE} />
+            <ellipse cx="30" cy="39" rx="4.2" ry="5.5" fill={CLOAK_SHADE} />
+            {/* 布から覗く、ずんぐりした短い腕 */}
+            <ellipse cx="7" cy="22" rx="3.4" ry="7.5" fill={LIMB_COLOR} />
+            <ellipse cx="39" cy="22" rx="3.4" ry="7.5" fill={LIMB_COLOR} />
+            {/* 本体: ぼろ布に包まれた、裾広がりのドーム型シルエット */}
+            <path d={BODY_PATH} fill={CLOAK_MAIN} />
+            <path d={BODY_SHADE_PATH} fill={CLOAK_SHADE} opacity="0.4" />
+            {/* 頭巾の房: 左右非対称・不揃いな2つの突起(擦り切れた布の角) */}
+            <path d={EAR_L_PATH} fill={CLOAK_TRIM} />
+            <path d={EAR_R_PATH} fill={CLOAK_TRIM} />
+            <Face activity={activity} />
+            {/* 布の合わせ目からわずかに覗く何か(正体は明かさない、色の存在感だけ) */}
+            <ellipse cx="24" cy="32" rx="2.2" ry="5.5" fill={GLIMPSE_COLOR} opacity="0.55" />
+            {/* 読んでいる本(実物の背表紙と同じ色味の表紙にして、本当にその本だと分かるようにする) */}
             {activity === "READING" && <HeldBook hue={heldBookHue ?? 40} />}
           </svg>
         </span>

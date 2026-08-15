@@ -45,8 +45,8 @@ export function BookSpine({
       data-book-id={book.id}
     >
       {inhabitantReadingHere && (
-        <span className="absolute -top-5 left-1/2 z-10 -translate-x-1/2">
-          <InhabitantMark activity="READING" size={22} heldBookHue={hue} />
+        <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2">
+          <InhabitantMark activity="READING" size={30} heldBookHue={hue} />
         </span>
       )}
       <Link
