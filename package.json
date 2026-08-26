@@ -12,23 +12,23 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
-    "next": "16.3.1",
-    "pg": "^8.23.0",
-    "prisma": "^7.9.1",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
-  },
-  "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.21.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "next": "16.3.1",
+    "pg": "^8.23.0",
+    "prisma": "^7.9.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "devDependencies": {
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
-    "playwright-core": "^1.62.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "playwright-core": "^1.62.1"
   }
 }
